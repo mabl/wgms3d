@@ -1,0 +1,16 @@
+
+Michael Krause <m.krause@tu-harburg.de>
+(main author)
+
+Furthermore, wgms3d incorporates some code by:
+
+Steven G. Johnson <stevenj@alum.mit.edu>
+  (autoconf macros for LAPACK and BLAS detection)
+
+The lib2geom team,
+Marco Cecchetti <mrcekets at gmail.com>,
+Michael G. Sloan <mgsloan@gmail.com> and others
+  (some geometry and Bézier code)
+
+Per Vognsen <vognsen@frost.slimy.com>
+  (polynomial root finder)

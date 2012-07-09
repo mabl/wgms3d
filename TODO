@@ -1,0 +1,19 @@
+
+* doc: explain how to exploit symmetry in certain structures
+
+* Add support for z-directed PMLs.
+
+* doc: explain -5 option
+
+* verify correct functioning of PMLs and waveguide curvature in scalar
+  mode
+
+* mgp.c: some primitives may be intersected more than once by a given
+  line. this is not handled properly at the moment.
+
+* add single-precision calculations (can save memory)
+
+* Make pseudo-2d mode work again.
+
+* The rough polarization guessing could be extended to handle
+  correctly the case of inhomogeneous grids.
