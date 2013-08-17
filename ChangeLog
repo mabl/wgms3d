@@ -1,3 +1,13 @@
+2013-08-17  Michael Krause  <m.krause@tu-harburg.de>
+
+	* Released v1.2.1.
+
+	* INSTALL (ARPACK): Updated to recommend using arpack-ng instead
+	of the custom-made arpack-96-r2-mk04.tar.gz.
+
+	* configure.ac: Checking for libarpack.so without a specific
+	version number.
+
 2012-07-09  Michael Krause  <m.krause@tu-harburg.de>
 
 	* Released v1.2.

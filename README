@@ -3,9 +3,9 @@
 
     wgms3d - a full-vectorial finite-difference mode solver.
 
-    VERSION 1.2
+    VERSION 1.2.1
 
-    Copyright (C) 2005-2012  Michael Krause <m.krause@tu-harburg.de>
+    Copyright (C) 2005-2013  Michael Krause <m.krause@tu-harburg.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

@@ -6053,7 +6053,7 @@ fi
 # Check whether --with-arpack was given.
 if test "${with_arpack+set}" = set; then :
   withval=$with_arpack;
-	        ARPACK_LIBS="${withval}/lib/libarpack.so.96.0.3"
+	        ARPACK_LIBS="${withval}/lib/libarpack.so"
 		ARPACK_INCLUDES="-I${withval}/include"
 
 fi

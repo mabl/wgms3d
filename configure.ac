@@ -93,7 +93,7 @@ fi
 AC_ARG_WITH(arpack,
 	    [  --with-arpack=DIR	  compile against ARPACK installed in DIR],
 	    [
-	        ARPACK_LIBS="${withval}/lib/libarpack.so.96.0.3"
+	        ARPACK_LIBS="${withval}/lib/libarpack.so"
 		ARPACK_INCLUDES="-I${withval}/include"
 	    ])
 AC_SUBST(ARPACK_LIBS)

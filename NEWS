@@ -4,6 +4,16 @@ ChangeLog)
 
 ----------------------------------------------------------------------
 
+What is new in wgms3d-1.2.1 (17-Aug-2013):
+
+* Updated installation instructions and build script for the ARPACK-NG
+  library distribution. It is no longer recommended to use my old
+  self-packaged and slightly modified version of ARPACK. This
+  simplifies installation and makes wgms3d work on platforms where it
+  didn't work before (thanks to Thach Nguyen for the reports).
+
+----------------------------------------------------------------------
+
 What is new in wgms3d-1.2 (9-Jul-2012):
 
 * In the semi-vectorial calculation mode, derived fields (transverse E
