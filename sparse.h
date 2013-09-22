@@ -29,6 +29,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "complex_functions.h"
+
 template <typename T>
 struct sparse_entry {
     unsigned int i; /* matrix row */

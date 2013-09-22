@@ -1,3 +1,11 @@
+2013-09-22  Michael Krause  <m.krause@tu-harburg.de>
+
+	* Released v1.2.2.
+
+	* complex_functions.h: Some helper functions for dealing with
+	complex numbers, extracted from fortran_interfaces.h so that the
+	template definition order is correct.
+
 2013-08-17  Michael Krause  <m.krause@tu-harburg.de>
 
 	* Released v1.2.1.

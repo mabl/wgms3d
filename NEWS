@@ -4,6 +4,14 @@ ChangeLog)
 
 ----------------------------------------------------------------------
 
+What is new in wgms3d-1.2.2 (22-Sep-2013):
+
+* Fixed source code so that it better complies with the C++11
+  standard.  Now even compiles with clang. (Thanks to Zhanghua Han for
+  pointing out a compilation problem.)
+
+----------------------------------------------------------------------
+
 What is new in wgms3d-1.2.1 (17-Aug-2013):
 
 * Updated installation instructions and build script for the ARPACK-NG

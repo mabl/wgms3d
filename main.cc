@@ -21,6 +21,8 @@
 #include "config.h"
 
 #include <iostream>
+#include <unistd.h>
+
 using std::cout;
 using std::cerr;
 using std::endl;

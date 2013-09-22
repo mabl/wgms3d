@@ -14,6 +14,7 @@ wgms3d_SOURCES = \
 	geometry.h \
 	bezier.cc \
 	bezier.h \
+	complex_functions.h \
 	fortran_interface.h \
 	standarddiffop_2nd.h \
 	standarddiffop_handmade.h \
@@ -23,7 +24,7 @@ INCLUDES = ${SUPERLU_INCLUDES} ${ARPACK_INCLUDES}
 
 wgms3d_LDADD = ${SUPERLU_LIBS} ${ARPACK_LIBS}
 
-wgms3d_CXXFLAGS = -Wall -std=c++0x
+wgms3d_CXXFLAGS = -Wall -pedantic -std=c++0x
 
 DIST_SUBDIRS = tests matlab
 

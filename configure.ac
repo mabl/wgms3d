@@ -1,5 +1,5 @@
 AC_INIT
-AM_INIT_AUTOMAKE(wgms3d, 1.2)
+AM_INIT_AUTOMAKE(wgms3d, 1.2.2)
 AC_CONFIG_SRCDIR([wgms3d.cc])
 AC_CONFIG_HEADER(config.h)
 

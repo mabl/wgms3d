@@ -52,7 +52,7 @@
 
  */
 
-class wgms3d_simulation_parameters;
+struct wgms3d_simulation_parameters;
 
 class Diffops {
 

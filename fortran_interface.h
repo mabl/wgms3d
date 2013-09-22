@@ -26,8 +26,7 @@
 #include <slu_ddefs.h>
 #include <slu_util.h>
 
-#include <complex>
-using std::complex;
+#include "complex_functions.h"
 
 /* The following works on Linux, and on HPUX in 32-bit and 64-bit modes */
 typedef int logical;
@@ -102,152 +101,129 @@ extern "C" {
     zQuerySpace (SuperMatrix *, SuperMatrix *, mem_usage_t *);
 }
 
-namespace {
+inline void COPY (int n, double *x, int incx, double *y, int incy) {
+    F77_FUNC(dcopy,DCOPY) (&n, x, &incx, y, &incy); }
+inline void COPY (int n, complex<double> *x, int incx, complex<double> *y, int incy) {
+    F77_FUNC(zcopy,ZCOPY) (&n, x, &incx, y, &incy); }
+inline void SCAL (int n, double alpha, double *x, int incx) {
+    F77_FUNC(dscal,DSCAL) (&n, &alpha, x, &incx); }
+inline void SCAL (int n, complex<double> alpha, complex<double> *x, int incx) {
+    F77_FUNC(zscal,ZSCAL) (&n, &alpha, x, &incx); }
+inline void GELS (char *TRANS, int *M, int *N, int *NRHS, complex<double> *A, int *LDA,
+	   complex<double> *B, int *LDB, complex<double> *WORK, int *LWORK, int *INFO) {
+    F77_FUNC(zgels,ZGELS) (TRANS, M, N, NRHS, A, LDA, B, LDB, WORK, LWORK, INFO); }
+inline void AXPY (int n, double alpha, double *x,
+	   int incx, double *y, int incy) {
+    F77_FUNC(daxpy,DAXPY) (&n, &alpha, x, &incx, y, &incy); }
+inline void AXPY (int n, complex<double> alpha, complex<double> *x,
+	   int incx, complex<double> *y, int incy) {
+    F77_FUNC(zaxpy,ZAXPY) (&n, &alpha, x, &incx, y, &incy); }
+inline void GEMM (char *TRANSA, char *TRANSB, int *M, int *N, int *K,
+	   double *ALPHA, double *A, int *LDA, double *B, int *LDB,
+	   double *BETA, double *C, int *LDC) {
+    F77_FUNC(dgemm,DGEMM) (TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, BETA, C, LDC); }
+inline void GEMM (char *TRANSA, char *TRANSB, int *M, int *N, int *K,
+	   complex<double> *ALPHA, complex<double> *A, int *LDA,
+	   complex<double> *B, int *LDB,
+	   complex<double> *BETA, complex<double> *C, int *LDC) {
+    F77_FUNC(zgemm,ZGEMM) (TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, BETA, C, LDC); }
 
-    template <class T> T sq (T x) {
-	return x * x;
-    }
+inline void
+NAUPD (int *ido, char *bmat, int *n, char *which, int *nev,
+       double *tol, complex<double> *resid, int *ncv, complex<double> *v,
+       int *ldv, int *iparam, int *ipntr, complex<double> *workd,
+       complex<double> *workl, int *lworkl, double *rwork, int *info)
+{
+    F77_FUNC(znaupd,ZNAUPD) (ido, bmat, n, which, nev, tol, resid, ncv, v,
+			     ldv, iparam, ipntr, workd, workl, lworkl, rwork, info);
+}
 
-    template <class T> T re (T &x) {
-	return x;
-    }
-    
-    template <class T> T re (complex<T> &x) {
-	return x.real();
-    }
-    
-    template <class T> T im (T &x) {
-	return 0.0;
-    }
+inline void
+NAUPD (int *ido, char *bmat, int *n, char *which, int *nev,
+       double *tol, double *resid, int *ncv, double *v,
+       int *ldv, int *iparam, int *ipntr, double *workd,
+       double *workl, int *lworkl, double *rwork, int *info)
+{
+    F77_FUNC(dnaupd,DNAUPD) (ido, bmat, n, which, nev, tol, resid, ncv, v,
+			     ldv, iparam, ipntr, workd, workl, lworkl, info);
+}
 
-    template <class T> T im (complex<T> &x) {
-	return x.imag();
-    }
-    
-    void COPY (int n, double *x, int incx, double *y, int incy) {
-	F77_FUNC(dcopy,DCOPY) (&n, x, &incx, y, &incy); }
-    void COPY (int n, complex<double> *x, int incx, complex<double> *y, int incy) {
-	F77_FUNC(zcopy,ZCOPY) (&n, x, &incx, y, &incy); }
-    void SCAL (int n, double alpha, double *x, int incx) {
-	F77_FUNC(dscal,DSCAL) (&n, &alpha, x, &incx); }
-    void SCAL (int n, complex<double> alpha, complex<double> *x, int incx) {
-	F77_FUNC(zscal,ZSCAL) (&n, &alpha, x, &incx); }
-    void GELS (char *TRANS, int *M, int *N, int *NRHS, complex<double> *A, int *LDA,
-	       complex<double> *B, int *LDB, complex<double> *WORK, int *LWORK, int *INFO) {
-	F77_FUNC(zgels,ZGELS) (TRANS, M, N, NRHS, A, LDA, B, LDB, WORK, LWORK, INFO); }
-    void AXPY (int n, double alpha, double *x,
-		      int incx, double *y, int incy) {
-	F77_FUNC(daxpy,DAXPY) (&n, &alpha, x, &incx, y, &incy); }
-    void AXPY (int n, complex<double> alpha, complex<double> *x,
-		      int incx, complex<double> *y, int incy) {
-	F77_FUNC(zaxpy,ZAXPY) (&n, &alpha, x, &incx, y, &incy); }
-    void GEMM (char *TRANSA, char *TRANSB, int *M, int *N, int *K,
-		      double *ALPHA, double *A, int *LDA, double *B, int *LDB,
-		      double *BETA, double *C, int *LDC) {
-	F77_FUNC(dgemm,DGEMM) (TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, BETA, C, LDC); }
-    void GEMM (char *TRANSA, char *TRANSB, int *M, int *N, int *K,
-		      complex<double> *ALPHA, complex<double> *A, int *LDA,
-		      complex<double> *B, int *LDB,
-		      complex<double> *BETA, complex<double> *C, int *LDC) {
-	F77_FUNC(zgemm,ZGEMM) (TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, BETA, C, LDC); }
+inline void
+NEUPD (logical *rvec, char *howmny, logical *select, complex<double> *d,
+       complex<double> *z, int *ldz, complex<double> sigma, complex<double> *workev,
+       char *bmat, int *n, char *which, int *nev, double *tol,
+       complex<double> *resid, int *ncv, complex<double> *v, int *ldv,
+       int *iparam, int *ipntr, complex<double> *workd, complex<double> *workl,
+       int *lworkl, double *rwork, int *info)
+{
+    F77_FUNC(zneupd,ZNEUPD) (rvec, howmny, select, d, z, ldz, &sigma,
+			     workev, bmat, n, which, nev, tol, resid, ncv,
+			     v, ldv, iparam, ipntr, workd, workl, lworkl,
+			     rwork, info);
+}
 
-    void
-	NAUPD (int *ido, char *bmat, int *n, char *which, int *nev,
-	       double *tol, complex<double> *resid, int *ncv, complex<double> *v,
-	       int *ldv, int *iparam, int *ipntr, complex<double> *workd,
-	       complex<double> *workl, int *lworkl, double *rwork, int *info)
-	{
-	    F77_FUNC(znaupd,ZNAUPD) (ido, bmat, n, which, nev, tol, resid, ncv, v,
-			 ldv, iparam, ipntr, workd, workl, lworkl, rwork, info);
-	}
+inline void
+NEUPD (logical *rvec, char *howmny, logical *select, complex<double> *d,
+       double *z, int *ldz, double sigma, double *workev,
+       char *bmat, int *n, char *which, int *nev, double *tol,
+       double *resid, int *ncv, double *v, int *ldv,
+       int *iparam, int *ipntr, double *workd, double *workl,
+       int *lworkl, double *rwork, int *info)
+{
+    int i;
+    int nevcopy = *nev;
     
-    void
-	NAUPD (int *ido, char *bmat, int *n, char *which, int *nev,
-	       double *tol, double *resid, int *ncv, double *v,
-	       int *ldv, int *iparam, int *ipntr, double *workd,
-	       double *workl, int *lworkl, double *rwork, int *info)
-	{
-	    F77_FUNC(dnaupd,DNAUPD) (ido, bmat, n, which, nev, tol, resid, ncv, v,
-			 ldv, iparam, ipntr, workd, workl, lworkl, info);
-	}
-    
-    void
-	NEUPD (logical *rvec, char *howmny, logical *select, complex<double> *d,
-	       complex<double> *z, int *ldz, complex<double> sigma, complex<double> *workev,
-	       char *bmat, int *n, char *which, int *nev, double *tol,
-	       complex<double> *resid, int *ncv, complex<double> *v, int *ldv,
-	       int *iparam, int *ipntr, complex<double> *workd, complex<double> *workl,
-	       int *lworkl, double *rwork, int *info)
-	{
-	    F77_FUNC(zneupd,ZNEUPD) (rvec, howmny, select, d, z, ldz, &sigma,
-			 workev, bmat, n, which, nev, tol, resid, ncv,
-			 v, ldv, iparam, ipntr, workd, workl, lworkl,
-			 rwork, info);
-	}
-    
-    void
-	NEUPD (logical *rvec, char *howmny, logical *select, complex<double> *d,
-	       double *z, int *ldz, double sigma, double *workev,
-	       char *bmat, int *n, char *which, int *nev, double *tol,
-	       double *resid, int *ncv, double *v, int *ldv,
-	       int *iparam, int *ipntr, double *workd, double *workl,
-	       int *lworkl, double *rwork, int *info)
-	{
-	    int i;
-	    int nevcopy = *nev;
-
-	    double *dr = new double[nevcopy+1];
-	    double *di = new double[nevcopy+1];
+    double *dr = new double[nevcopy+1];
+    double *di = new double[nevcopy+1];
 	    
-	    double sigmar = sigma;
-	    double sigmai = 0.0;
+    double sigmar = sigma;
+    double sigmai = 0.0;
 	    
-	    F77_FUNC(dneupd,DNEUPD) (rvec, howmny, select, dr, di, z, ldz, &sigmar, &sigmai,
-			 workev, bmat, n, which, nev, tol, resid, ncv,
-			 v, ldv, iparam, ipntr, workd, workl, lworkl, info);
+    F77_FUNC(dneupd,DNEUPD) (rvec, howmny, select, dr, di, z, ldz, &sigmar, &sigmai,
+			     workev, bmat, n, which, nev, tol, resid, ncv,
+			     v, ldv, iparam, ipntr, workd, workl, lworkl, info);
 	    
-	    for(i = 0; i < nevcopy+1; i++) {
-		d[i] = complex<double>(dr[i],di[i]);
-	    }
+    for(i = 0; i < nevcopy+1; i++) {
+	d[i] = complex<double>(dr[i],di[i]);
+    }
 	    
-	    delete[] dr;
-	    delete[] di;
-	}
+    delete[] dr;
+    delete[] di;
+}
 
 #ifndef USE_PARDISO
-    void
+    inline void
 	Create_CompCol_Matrix (SuperMatrix *a, int b, int c, int d, double *e,
 			       int *f, int *g, Stype_t h, Mtype_t j)
 	{
 	    dCreate_CompCol_Matrix (a, b, c, d, e, f, g, h, SLU_D, j);
 	}
     
-    void
+    inline void
 	Create_CompCol_Matrix (SuperMatrix *a, int b, int c, int d, complex<double> *e,
 			       int *f, int *g, Stype_t h, Mtype_t j)
 	{
 	    zCreate_CompCol_Matrix (a, b, c, d, reinterpret_cast <complex<double>*> (e), f, g, h, SLU_Z, j);
 	}
 
-    Dtype_t
+    inline Dtype_t
 	get_slu_type (double *)
 	{
 	    return SLU_D;
 	}
-    Dtype_t
+    inline Dtype_t
 	get_slu_type (complex<double> *)
 	{
 	    return SLU_Z;
 	}
 #endif
 
-    int is_complex_calculation (const double *) {
-	return 0;
-    }
+inline int is_complex_calculation (const double *) {
+    return 0;
+}
 
-    int is_complex_calculation (const complex<double> *) {
-	return 1;
-    }
+inline int is_complex_calculation (const complex<double> *) {
+    return 1;
 }
 
 template <class T>
