@@ -23,215 +23,62 @@
 
 #include "config.h"
 
-#include <slu_ddefs.h>
-#include <slu_util.h>
-
 #include "complex_functions.h"
 
-/* The following works on Linux, and on HPUX in 32-bit and 64-bit modes */
-typedef int logical;
-
-extern "C" {
-
-    /* ARPACK functions */
-    extern void
-    F77_FUNC(znaupd,ZNAUPD) (int *ido, char *bmat, int *n, char *which, int *nev,
-			     double *tol, std::complex<double> *resid, int *ncv, std::complex<double> *v,
-			     int *ldv, int *iparam, int *ipntr, std::complex<double> *workd,
-			     complex<double> *workl, int *lworkl, double *rwork, int *info);
-    extern void
-    F77_FUNC(dnaupd,DNAUPD) (int *ido, char *bmat, int *n, char *which, int *nev,
-			     double *tol, double *resid, int *ncv, double *v,
-			     int *ldv, int *iparam, int *ipntr, double *workd,
-			     double *workl, int *lworkl, int *info);
-    extern void
-    F77_FUNC(zneupd,ZNEUPD) (logical *rvec, char *howmny, logical *select, complex<double> *d,
-			     complex<double> *z, int *ldz, complex<double> *sigma, complex<double> *workev,
-			     char *bmat, int *n, char *which, int *nev, double *tol,
-			     complex<double> *resid, int *ncv, complex<double> *v, int *ldv,
-			     int *iparam, int *ipntr, complex<double> *workd, complex<double> *workl,
-			     int *lworkl, double *rwork, int *info);
-    extern void
-    F77_FUNC(dneupd,DNEUPD) (logical *rvec, char *howmny, logical *select, double *dr, double *di,
-			     double *z, int *ldz, double *sigmar, double *sigmai, double *workev,
-			     char *bmat, int *n, char *which, int *nev, double *tol, double *resid,
-			     int *ncv, double *v, int *ldv, int *iparam, int *ipntr, double *workd,
-			     double *workl, int *lworkl, int *info);
-
+extern "C"
+{
     /* BLAS/LAPACK functions */
-    extern void F77_FUNC(zgels,ZGELS) (char *TRANS, int *M, int *N, int *NRHS, complex<double> *A, int *LDA,
-			complex<double> *B, int *LDB, complex<double> *WORK, int *LWORK, int *INFO);
+    extern void F77_FUNC(zgels,ZGELS) (char *TRANS, int *M, int *N, int *NRHS, std::complex<double> *A, int *LDA,
+				       std::complex<double> *B, int *LDB, std::complex<double> *WORK, int *LWORK, int *INFO);
     extern void F77_FUNC(dcopy,DCOPY) (int *n, double *x, int *incx, double *y, int *incy);
-    extern void F77_FUNC(zcopy,ZCOPY) (int *n, complex<double> *x, int *incx, complex<double> *y, int *incy);
+    extern void F77_FUNC(zcopy,ZCOPY) (int *n, std::complex<double> *x, int *incx, std::complex<double> *y, int *incy);
     extern void F77_FUNC(dscal,DSCAL) (int *n, double *alpha, double *x, int *incx);
-    extern void F77_FUNC(zscal,ZSCAL) (int *n, complex<double> *alpha, complex<double> *x, int *incx);
+    extern void F77_FUNC(zscal,ZSCAL) (int *n, std::complex<double> *alpha, std::complex<double> *x, int *incx);
     extern void F77_FUNC(daxpy,DAXPY) (int *n, double *alpha, double *x,
-			int *incx, double *y, int *incy);
-    extern void F77_FUNC(zaxpy,ZAXPY) (int *n, complex<double> *alpha, complex<double> *x,
-			int *incx, complex<double> *y, int *incy);
+				       int *incx, double *y, int *incy);
+    extern void F77_FUNC(zaxpy,ZAXPY) (int *n, std::complex<double> *alpha, std::complex<double> *x,
+				       int *incx, std::complex<double> *y, int *incy);
     extern void F77_FUNC(dgemm,DGEMM) (char *TRANSA, char *TRANSB, int *M, int *N, int *K,
-			double *ALPHA, double *A, int *LDA, double *B, int *LDB,
-			double *BETA, double *C, int *LDC);
+				       double *ALPHA, double *A, int *LDA, double *B, int *LDB,
+				       double *BETA, double *C, int *LDC);
     extern void F77_FUNC(zgemm,ZGEMM) (char *TRANSA, char *TRANSB, int *M, int *N, int *K,
-			complex<double> *ALPHA, complex<double> *A, int *LDA,
-			complex<double> *B, int *LDB,
-			complex<double> *BETA, complex<double> *C, int *LDC);
-
-    /* SuperLU functions */
-    /* We want to use both the real and complex SuperLU routines, but we
-       can't include slu_ddefs.h and slu_zdefs.h at the same time, since
-       they contain colliding definitions.
-
-       Therefore we copy here the definitions from slu_zdefs.h...
-
-       This is for SuperLU Version 4.0. */
-
-    extern void    zgstrs (trans_t, SuperMatrix *, SuperMatrix *, int *, int *,
-			   SuperMatrix *, SuperLUStat_t*, int *);
-    
-    extern void    zgstrf (superlu_options_t*, SuperMatrix*,
-			   int, int, int*, void *, int, int *, int *, 
-			   SuperMatrix *, SuperMatrix *, SuperLUStat_t*, int *);
-
-    extern void
-    zCreate_CompCol_Matrix(SuperMatrix *, int, int, int, complex<double> *,
-			   int *, int *, Stype_t, Dtype_t, Mtype_t);
-
-    extern int     
-    zQuerySpace (SuperMatrix *, SuperMatrix *, mem_usage_t *);
+				       std::complex<double> *ALPHA, std::complex<double> *A, int *LDA,
+				       std::complex<double> *B, int *LDB,
+				       std::complex<double> *BETA, std::complex<double> *C, int *LDC);
 }
 
 inline void COPY (int n, double *x, int incx, double *y, int incy) {
     F77_FUNC(dcopy,DCOPY) (&n, x, &incx, y, &incy); }
-inline void COPY (int n, complex<double> *x, int incx, complex<double> *y, int incy) {
+inline void COPY (int n, std::complex<double> *x, int incx, std::complex<double> *y, int incy) {
     F77_FUNC(zcopy,ZCOPY) (&n, x, &incx, y, &incy); }
 inline void SCAL (int n, double alpha, double *x, int incx) {
     F77_FUNC(dscal,DSCAL) (&n, &alpha, x, &incx); }
-inline void SCAL (int n, complex<double> alpha, complex<double> *x, int incx) {
+inline void SCAL (int n, std::complex<double> alpha, std::complex<double> *x, int incx) {
     F77_FUNC(zscal,ZSCAL) (&n, &alpha, x, &incx); }
-inline void GELS (char *TRANS, int *M, int *N, int *NRHS, complex<double> *A, int *LDA,
-	   complex<double> *B, int *LDB, complex<double> *WORK, int *LWORK, int *INFO) {
+inline void GELS (char *TRANS, int *M, int *N, int *NRHS, std::complex<double> *A, int *LDA,
+		  std::complex<double> *B, int *LDB, std::complex<double> *WORK, int *LWORK, int *INFO) {
     F77_FUNC(zgels,ZGELS) (TRANS, M, N, NRHS, A, LDA, B, LDB, WORK, LWORK, INFO); }
 inline void AXPY (int n, double alpha, double *x,
-	   int incx, double *y, int incy) {
+		  int incx, double *y, int incy) {
     F77_FUNC(daxpy,DAXPY) (&n, &alpha, x, &incx, y, &incy); }
-inline void AXPY (int n, complex<double> alpha, complex<double> *x,
-	   int incx, complex<double> *y, int incy) {
+inline void AXPY (int n, std::complex<double> alpha, std::complex<double> *x,
+		  int incx, std::complex<double> *y, int incy) {
     F77_FUNC(zaxpy,ZAXPY) (&n, &alpha, x, &incx, y, &incy); }
 inline void GEMM (char *TRANSA, char *TRANSB, int *M, int *N, int *K,
-	   double *ALPHA, double *A, int *LDA, double *B, int *LDB,
-	   double *BETA, double *C, int *LDC) {
+		  double *ALPHA, double *A, int *LDA, double *B, int *LDB,
+		  double *BETA, double *C, int *LDC) {
     F77_FUNC(dgemm,DGEMM) (TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, BETA, C, LDC); }
 inline void GEMM (char *TRANSA, char *TRANSB, int *M, int *N, int *K,
-	   complex<double> *ALPHA, complex<double> *A, int *LDA,
-	   complex<double> *B, int *LDB,
-	   complex<double> *BETA, complex<double> *C, int *LDC) {
+		  std::complex<double> *ALPHA, std::complex<double> *A, int *LDA,
+		  std::complex<double> *B, int *LDB,
+		  std::complex<double> *BETA, std::complex<double> *C, int *LDC) {
     F77_FUNC(zgemm,ZGEMM) (TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, BETA, C, LDC); }
 
-inline void
-NAUPD (int *ido, char *bmat, int *n, char *which, int *nev,
-       double *tol, complex<double> *resid, int *ncv, complex<double> *v,
-       int *ldv, int *iparam, int *ipntr, complex<double> *workd,
-       complex<double> *workl, int *lworkl, double *rwork, int *info)
-{
-    F77_FUNC(znaupd,ZNAUPD) (ido, bmat, n, which, nev, tol, resid, ncv, v,
-			     ldv, iparam, ipntr, workd, workl, lworkl, rwork, info);
-}
-
-inline void
-NAUPD (int *ido, char *bmat, int *n, char *which, int *nev,
-       double *tol, double *resid, int *ncv, double *v,
-       int *ldv, int *iparam, int *ipntr, double *workd,
-       double *workl, int *lworkl, double *rwork, int *info)
-{
-    F77_FUNC(dnaupd,DNAUPD) (ido, bmat, n, which, nev, tol, resid, ncv, v,
-			     ldv, iparam, ipntr, workd, workl, lworkl, info);
-}
-
-inline void
-NEUPD (logical *rvec, char *howmny, logical *select, complex<double> *d,
-       complex<double> *z, int *ldz, complex<double> sigma, complex<double> *workev,
-       char *bmat, int *n, char *which, int *nev, double *tol,
-       complex<double> *resid, int *ncv, complex<double> *v, int *ldv,
-       int *iparam, int *ipntr, complex<double> *workd, complex<double> *workl,
-       int *lworkl, double *rwork, int *info)
-{
-    F77_FUNC(zneupd,ZNEUPD) (rvec, howmny, select, d, z, ldz, &sigma,
-			     workev, bmat, n, which, nev, tol, resid, ncv,
-			     v, ldv, iparam, ipntr, workd, workl, lworkl,
-			     rwork, info);
-}
-
-inline void
-NEUPD (logical *rvec, char *howmny, logical *select, complex<double> *d,
-       double *z, int *ldz, double sigma, double *workev,
-       char *bmat, int *n, char *which, int *nev, double *tol,
-       double *resid, int *ncv, double *v, int *ldv,
-       int *iparam, int *ipntr, double *workd, double *workl,
-       int *lworkl, double *rwork, int *info)
-{
-    int i;
-    int nevcopy = *nev;
-    
-    double *dr = new double[nevcopy+1];
-    double *di = new double[nevcopy+1];
-	    
-    double sigmar = sigma;
-    double sigmai = 0.0;
-	    
-    F77_FUNC(dneupd,DNEUPD) (rvec, howmny, select, dr, di, z, ldz, &sigmar, &sigmai,
-			     workev, bmat, n, which, nev, tol, resid, ncv,
-			     v, ldv, iparam, ipntr, workd, workl, lworkl, info);
-	    
-    for(i = 0; i < nevcopy+1; i++) {
-	d[i] = complex<double>(dr[i],di[i]);
-    }
-	    
-    delete[] dr;
-    delete[] di;
-}
-
-#ifndef USE_PARDISO
-    inline void
-	Create_CompCol_Matrix (SuperMatrix *a, int b, int c, int d, double *e,
-			       int *f, int *g, Stype_t h, Mtype_t j)
-	{
-	    dCreate_CompCol_Matrix (a, b, c, d, e, f, g, h, SLU_D, j);
-	}
-    
-    inline void
-	Create_CompCol_Matrix (SuperMatrix *a, int b, int c, int d, complex<double> *e,
-			       int *f, int *g, Stype_t h, Mtype_t j)
-	{
-	    zCreate_CompCol_Matrix (a, b, c, d, reinterpret_cast <complex<double>*> (e), f, g, h, SLU_Z, j);
-	}
-
-    inline Dtype_t
-	get_slu_type (double *)
-	{
-	    return SLU_D;
-	}
-    inline Dtype_t
-	get_slu_type (complex<double> *)
-	{
-	    return SLU_Z;
-	}
-#endif
-
-inline int is_complex_calculation (const double *) {
-    return 0;
-}
-
-inline int is_complex_calculation (const complex<double> *) {
-    return 1;
-}
-
 template <class T>
-static void
-dump_fortran_matrix (T *A,
-		     int lda,
-		     int nrows,
-		     int ncols)
+void dump_fortran_matrix (T *A,
+			  int lda,
+			  int nrows,
+			  int ncols)
 {
     int i, j;
 
@@ -249,11 +96,10 @@ dump_fortran_matrix (T *A,
 }
 
 template <class T>
-static void
-dump_fortran_matrix (complex<T> *A,
-		     int lda,
-		     int nrows,
-		     int ncols)
+void dump_fortran_matrix (std::complex<T> *A,
+			  int lda,
+			  int nrows,
+			  int ncols)
 {
     int i, j;
 
@@ -266,22 +112,20 @@ dump_fortran_matrix (complex<T> *A,
 }
 
 template <class T>
-static void
-dump_fortran_matrix (T *A,
-		     int nrows,
-		     int ncols)
+void dump_fortran_matrix (T *A,
+			  int nrows,
+			  int ncols)
 {
     dump_fortran_matrix(A, nrows, nrows, ncols);
 }
 
 template <class T>
-static void
-matrix_copy (T *dst,
-	     int ldst,
-	     T *src,
-	     int lsrc,
-	     int nrows,
-	     int ncols)
+void matrix_copy (T *dst,
+		  int ldst,
+		  T *src,
+		  int lsrc,
+		  int nrows,
+		  int ncols)
 {
     int i, j;
 

@@ -1,3 +1,56 @@
+2014-05-17  Michael Krause  <m.krause@tu-harburg.de>
+
+	* doc/: Copied web-site files here for documentation; README and
+	INSTALL now point here.
+
+2014-03-09  Michael Krause  <m.krause@tu-harburg.de>
+
+	* Update acx_blas.m4 and acx_lapack.m4 to latest versions from GNU
+	Autoconf Archive.
+
+2014-01-07  Michael Krause  <m.krause@tu-harburg.de>
+
+	* matlab/wgms3d_plot_quiver.m: Set colors for quiver real and
+	imaginary part explicitly.
+
+2013-12-27  Michael Krause  <m.krause@tu-harburg.de>
+
+	* matlab/wgms3d_plot_contours.m: Fixed to not print a warning in
+	Octave 3.6.4.
+
+	* wgms3d.cc (calculate_modes): Only root process generates FD
+	matrix; n and sigma are then broadcast to the other nodes.
+
+	* main.cc: Only root process outputs the final field data and
+	computes derived fields.
+
+	* sparse.h (sparse_entry): Removed unused is_same_place() member
+	function.
+
+2013-12-26  Michael Krause  <m.krause@tu-harburg.de>
+
+	* configure.ac: improvements: check for C++11 compiler; check for
+	Boost headers; don't have automatic dependencies any longer; check
+	for MPI, PETSc and SLEPc; make sure that slepc and arpack aren't
+	selected simultaneously, and at least one is selected.
+
+2013-12-22  Michael Krause  <m.krause@tu-harburg.de>
+
+	* solver_slepc.cc: Started to write code for interfacing to SLEPc
+	solver (thanks to Henry Wu for doing some initial experiments with
+	his pwgms3d-1.3).
+
+	* wgms3d.cc, solver.h, solver_superlu_arpack.cpp: Moved the old
+	SuperLU/ARPACK-specific stuff from wgms3d.cc to
+	solver_superlu_arpack.cpp, and introduced an intermediate
+	interface (ISolverResult).
+
+	* main.cc: printing Boost diagnostic information for exceptions
+	caught in main().
+
+	* Started to improve C++ code quality all over the place. Not
+	listing all the details here, since it's too much.
+
 2013-09-22  Michael Krause  <m.krause@tu-harburg.de>
 
 	* Released v1.2.2.
@@ -72,10 +125,9 @@
 2012-06-06  Michael Krause  <m.krause@tu-harburg.de>
 
 	* wgms3d.cc (eigensolve): Asking user to contact the author when
-	DNAUPD fails (this shouldn't happen). In very rare cases (but then
-	reproducibly), ARPACK's dnaupd fails with IDO=99, INFO=-8. I don't
-	have any cases for the current wgms3d, but it happened with
-	earlier versions. If somebody sees this error, please notify me.
+	DNAUPD fails. In very rare cases (but then reproducibly), ARPACK's
+	dnaupd fails with IDO=99, INFO=-8. I don't have any cases for the
+	current wgms3d, but it happened with earlier versions.
 
 2012-02-27  Michael Krause  <m.krause@tu-harburg.de>
 

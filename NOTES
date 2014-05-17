@@ -1,5 +1,6 @@
 
-Some notes on the "design" of wgms3d and its internal data structures.
+Some notes on the "design" of wgms3d and its internal data structures
+(some notes might no longer apply for wgms3d-2.0)
 ----------------------------------------------------------------------
 
 Two-dimensional arrays corresponding to data defined on the

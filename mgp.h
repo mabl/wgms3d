@@ -25,86 +25,105 @@
 #include <cmath>
 #include <complex>
 #include <iostream>
+#include <memory>
 
 #include "geometry.h"
 
-struct nboundary {
-    double a;
-    double theta;
-    double c; /* curvature */
-    std::complex<double> epsl, epsr;
+namespace wgms3d {
 
-    bool operator< (nboundary &b) {
-	return a < b.a;
-    }
+    struct nboundary {
+	double a;
+	double theta;
+	double c; /* curvature */
+	std::complex<double> epsl, epsr;
 
-    void print (void) {
-	std::cout << "  Interface @a=" << a << " with c=" << c
-		  << ", " << std::sqrt(epsl) << "->" << std::sqrt(epsr)
-		  << ", theta=" << theta << std::endl;
-    }
-};
-
-struct lin_interface {
-    std::complex<double> nl, nr;
-    double x1, y1, x2, y2;
-};
-
-struct bez_interface {
-    std::complex<double> nl, nr;
-    std::vector<Point> points;
-    std::vector<Point> deriv1;
-    std::vector<Point> deriv2;
-    Rect boundingbox;
-};
-
-struct ell_interface {
-    std::complex<double> nout, nin;
-    double x, y, rx, ry;
-};
-
-class MGP {
-  private:
-
-    std::complex<double> n_def;
-    int scany0_set;
-    double scany0;
-
-    double core_x1, core_y1, core_x2, core_y2;
-
-    std::list<lin_interface> lin_interfaces;
-    std::list<bez_interface> bez_interfaces;
-    std::list<ell_interface> ell_interfaces;
-
-  public:
-
-    MGP (const char *mgp_filename);
-
-    bool is_core_layer_defined (void)
-    {
-	return core_x1 != core_x2;
-    }
-    
-    bool is_in_core (double x,
-		     double y)
-    {
-	if(core_x1 == core_x2) {
-	    return 0;
+	bool operator< (nboundary &b) {
+	    return a < b.a;
 	}
-	
-	return x >= core_x1 && x <= core_x2 && y >= core_y1 && y <= core_y2;
-    }
 
-    std::list<nboundary> *
+	void print (void) {
+	    std::cout << "  Interface @a=" << a << " with c=" << c
+		      << ", " << std::sqrt(epsl) << "->" << std::sqrt(epsr)
+		      << ", theta=" << theta << std::endl;
+	}
+    };
+
+    struct lin_interface {
+	std::complex<double> nl, nr;
+	double x1, y1, x2, y2;
+    };
+
+    struct bez_interface {
+	std::complex<double> nl, nr;
+	std::vector<Point> points;
+	std::vector<Point> deriv1;
+	std::vector<Point> deriv2;
+	Rect boundingbox;
+    };
+
+    struct ell_interface {
+	std::complex<double> nout, nin;
+	double x, y, rx, ry;
+    };
+
+    class MGP
+    {
+    public:
+
+	MGP (const char *mgp_filename);
+
+	bool is_core_layer_defined (void) const
+	{
+	    return core_x1 != core_x2;
+	}
+    
+	bool is_in_core (double x,
+			 double y) const
+	{
+	    if(core_x1 == core_x2) {
+		return 0;
+	    }
+	
+	    return x >= core_x1 && x <= core_x2 && y >= core_y1 && y <= core_y2;
+	}
+
+	std::list<nboundary> *
 	find_intersections_with_line_segment (double px,
 					      double py,
 					      double dx,
-					      double dy);
+					      double dy) const;
 
-    std::complex<double> *
-	get_epsis_on_grid (const std::vector<double> &x,
-			   const std::vector<double> &y);
+	/// Return a (Fortran-style) array representing the relative
+	/// permittivity (epsilon) on the specified grid. Leading
+	/// dimension will be rho.size().
+	std::unique_ptr< std::complex<double>[] >
+	get_epsis_on_grid (
+	    const std::vector<double> &rho,
+	    const std::vector<double> &z
+	    ) const;
 
-};
+	/// Returns true if at least one of the materials used in the
+	/// structure has a complex (not purely real) effective index.
+	bool hasComplexIndices () const;
+
+    private:
+
+	std::complex<double> n_def;
+	bool scany0_set;
+	double scany0;
+
+	double core_x1, core_y1, core_x2, core_y2;
+
+	std::list<lin_interface> lin_interfaces;
+	std::list<bez_interface> bez_interfaces;
+	std::list<ell_interface> ell_interfaces;
+
+	bool has_complex_indices;
+
+	void updateHasComplexIndices (std::complex<double> new_index);
+
+    };
+
+} // namespace wgms3d
 
 #endif /* _MGP_H */

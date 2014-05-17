@@ -5,6 +5,7 @@ wgms3d_SOURCES = \
 	main.cc \
 	wgms3d.cc \
 	wgms3d.h \
+	simulation_parameters.h \
 	diffops.cc \
 	diffops.h \
 	stencil.h \
@@ -18,15 +19,21 @@ wgms3d_SOURCES = \
 	fortran_interface.h \
 	standarddiffop_2nd.h \
 	standarddiffop_handmade.h \
-	pml.h
+	pml.h \
+	solver.h \
+	make_unique.h
 
-INCLUDES = ${SUPERLU_INCLUDES} ${ARPACK_INCLUDES}
+if HAS_SLEPC
+wgms3d_SOURCES += solver_slepc.cc
+endif
 
-wgms3d_LDADD = ${SUPERLU_LIBS} ${ARPACK_LIBS}
+if HAS_ARPACK
+wgms3d_SOURCES += solver_superlu_arpack.cc
+endif
 
-wgms3d_CXXFLAGS = -Wall -pedantic -std=c++0x
+wgms3d_CXXFLAGS = -Wall -pedantic
 
-DIST_SUBDIRS = tests matlab
+DIST_SUBDIRS = tests matlab doc
 
 # The following is a Maple script used to generate the
 # homogeneous-space differential operators (standarddiffop_2nd.h).

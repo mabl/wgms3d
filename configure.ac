@@ -1,13 +1,32 @@
-AC_INIT
-AM_INIT_AUTOMAKE(wgms3d, 1.2.2)
+AC_INIT([wgms3d], [2.0])
 AC_CONFIG_SRCDIR([wgms3d.cc])
+AM_INIT_AUTOMAKE
 AC_CONFIG_HEADER(config.h)
 
+##############################################################################
+# Check for compilers (and MPI, if requested)
+#
+
+AC_ARG_WITH([mpi], AS_HELP_STRING([--with-mpi], [Build with MPI (default: disabled)]))
+AS_IF([test "x$with_mpi" = "xyes"], [F77="mpif77" CXX="mpic++"])
 AC_PROG_F77
+AC_PROG_CXX
+AS_IF([test "x$with_mpi" = "xyes"], [ LDFLAGS="$LDFLAGS -lmpi" CPPFLAGS="$CPPFLAGS -I/usr/include/mpi"
+                                      AC_DEFINE(HAVE_MPI,1,[Defined if we're compiling against MPI.]) ])
 AC_F77_LIBRARY_LDFLAGS
 AC_F77_WRAPPERS
 
-AC_PROG_CXX
+AC_LANG(C++)
+sinclude(ax_cxx_compile_stdcxx_11.m4)
+AX_CXX_COMPILE_STDCXX_11
+
+AC_CHECK_HEADER([boost/throw_exception.hpp], [], [AC_MSG_ERROR(Need Boost C++ library headers.)])
+
+##############################################################################
+# Check for BLAS and LAPACK
+#
+
+AC_LANG(C)
 
 sinclude(acx_blas.m4)
 sinclude(acx_lapack.m4)
@@ -50,73 +69,96 @@ fi
 # Check for SuperLU
 #
 
-AC_ARG_WITH(superlu,
-	    [  --with-superlu=DIR	  compile against SuperLU installed in DIR],
-	    [
-	        SUPERLU_LIBS="${withval}/lib/libsuperlu.so.4.0.0"
-		SUPERLU_INCLUDES="-I${withval}/include"
-	    ])
-AC_SUBST(SUPERLU_LIBS)
-AC_SUBST(SUPERLU_INCLUDES)
-
-save_LIBS="$LIBS";
-save_CFLAGS="$CFLAGS";
-LIBS="$SUPERLU_LIBS $LIBS"
-CFLAGS="$SUPERLU_INCLUDES $CFLAGS"
-AC_MSG_CHECKING([whether linking to SuperLU works])
-AC_TRY_LINK([
-	#include <slu_ddefs.h>
-	#include <slu_util.h>
-	],[
-    superlu_options_t *a;
-    SuperMatrix *AC;
-    int d, e, *f;
-    void *g;
-    int h, *i, *j;
-    SuperMatrix *k, *l;
-    SuperLUStat_t *m;
-    int *n;
-    dgstrf(a,AC,d,e,f,g,h,i,j,k,l,m,n);
-    F77_FUNC(dcopy,DCOPY)();
-], ok="yes", ok="no", ok="no")
-LIBS="$save_LIBS"
-CFLAGS="$save_CFLAGS"
-AC_MSG_RESULT($ok)
-if test "$ok" = "no"; then
-	AC_MSG_ERROR(Please try --with-superlu={prefix}.)
-fi
+AC_ARG_WITH(
+ superlu,
+ AS_HELP_STRING([--with-superlu=DIR], [Build with SuperLU library (default: disabled)]),
+ [LDFLAGS="$LDFLAGS -L${withval}/lib" CPPFLAGS="$CPPFLAGS -I${withval}/include"],
+ [with_superlu=no]
+)
+AS_IF([test "x$with_superlu" != "xno"], [
+ AC_CHECK_LIB([superlu], [dgstrf], [have_superlu=yes; LIBS="-lsuperlu $LIBS"; AC_DEFINE(HAVE_SUPERLU,1,[Defined if we can link to SUPERLU.])])
+ AS_IF([test "x$have_superlu" != "xyes"], [ AC_MSG_ERROR(Please try --with-superlu={prefix}.)])
+])
 
 ##############################################################################
 # Check for ARPACK
 #
 
-AC_ARG_WITH(arpack,
-	    [  --with-arpack=DIR	  compile against ARPACK installed in DIR],
-	    [
-	        ARPACK_LIBS="${withval}/lib/libarpack.so"
-		ARPACK_INCLUDES="-I${withval}/include"
-	    ])
-AC_SUBST(ARPACK_LIBS)
-AC_SUBST(ARPACK_INCLUDES)
+AC_ARG_WITH(
+ arpack,
+ AS_HELP_STRING([--with-arpack=DIR], [Build with ARPACK library (default: disabled)]),
+ [LDFLAGS="$LDFLAGS -L${withval}/lib" ],
+ [with_arpack=no]
+)
+AS_IF([test "x$with_arpack" != "xno"], [
+ # First make sure that SuperLU is working:
+ AS_IF([test "x$have_superlu" != "xyes"], [ AC_MSG_ERROR(Can't use ARPACK without SuperLU.) ])
+ AC_F77_FUNC(dnaupd)
+ AC_CHECK_LIB([arpack], [$dnaupd], [have_arpack=yes; LIBS="-larpack $LIBS"; AC_DEFINE(HAVE_ARPACK,1,[Defined if we can link to ARPACK.])])
+ AS_IF([test "x$have_arpack" != "xyes"], [ AC_MSG_ERROR(Please try --with-arpack={prefix}.)])
+])
 
-save_LIBS="$LIBS";
-save_CFLAGS="$CFLAGS";
-LIBS="$ARPACK_LIBS $LIBS"
-CFLAGS="$ARPACK_INCLUDES $CFLAGS"
-AC_MSG_CHECKING([whether linking to ARPACK works])
-AC_F77_FUNC(dnaupd)
-AC_TRY_LINK([],[
-    $dnaupd();
-    F77_FUNC(dcopy,DCOPY)();
-], ok="yes", ok="no", ok="no")
-LIBS="$save_LIBS"
-CFLAGS="$save_CFLAGS"
-AC_MSG_RESULT($ok)
-if test "$ok" = "no"; then
-	AC_MSG_ERROR(Please try --with-arpack={prefix}.)
-fi
+AM_CONDITIONAL([HAS_ARPACK], [test "x$have_arpack" = "xyes"])
+
+##############################################################################
+# Check for PETSc
+#
+
+AC_LANG(C++)
+
+AC_ARG_WITH(petsc, AS_HELP_STRING([--with-petsc], [Build with PETSc library (default: disabled)]))
+AS_IF([test "x$with_petsc" = "xyes"], [
+ AS_IF([test "x$with_mpi" != "xyes"], [ AC_MSG_ERROR(Can't use PETSc without MPI.) ])
+ AS_IF([test "x$with_petsc" != "xno"], [
+ 	     petsclib=`(cd $PETSC_DIR; make getlinklibs)`;
+ 	     petscinclude=`(cd $PETSC_DIR; make getincludedirs)`;
+	     LDFLAGS="$LDFLAGS $petsclib"
+	     CPPFLAGS="$CPPFLAGS $petscinclude"])
+ AC_CHECK_HEADER([petsc.h],
+  [AC_CHECK_LIB([petsc], [MatCreate], [have_petsc=yes; LIBS="-lpetsc $LIBS"; AC_DEFINE(HAVE_PETSC,1,[Defined if we can link to PETSc.])])])
+ AS_IF([test "x$have_petsc" != "xyes"], [ AC_MSG_ERROR(Please set PETSC_DIR and PETSC_ARCH environment variables.)])
+])
+
+##############################################################################
+# Check for SLEPc
+#
+
+AC_ARG_WITH(slepc, AS_HELP_STRING([--with-slepc], [Build with SLEPc library (default: disabled)]))
+AS_IF([test "x$with_slepc" = "xyes"], [
+ AS_IF([test "x$have_petsc" != "xyes"], [AC_MSG_ERROR(Can't use SLEPc without PETSc.)])
+ AS_IF([test "x$with_slepc" != "xno"], [
+ 	     #slepclib=`(cd $SLEPC_DIR; make getlinklibs)`;
+ 	     #slepcinclude=`(cd $SLEPC_DIR; make getincludedirs)`;
+ 	     LDFLAGS="$LDFLAGS -L${SLEPC_DIR}/${PETSC_ARCH}/lib -lpetsc"
+	     CPPFLAGS="$CPPFLAGS -I${SLEPC_DIR}/include -I${SLEPC_DIR}/${PETSC_ARCH}/include"])
+ AC_CHECK_HEADER([slepceps.h],
+  [AC_CHECK_LIB([slepc], [EPSCreate], [have_slepc=yes; LIBS="-lslepc $LIBS"; AC_DEFINE(HAVE_SLEPC,1,[Defined to 1 if we can link to SLEPc.])])])
+ AS_IF([test "x$have_slepc" != "xyes"], [ AC_MSG_ERROR(Please set SLEPC_DIR environment variable.)])
+])
+AM_CONDITIONAL([HAS_SLEPC], [test "x$with_slepc" = "xyes"])
+
+##############################################################################
+# Check for collisions
+#
+
+AS_IF([test "x$have_superlu" = "xyes" -a "x$have_arpack" != "xyes"],
+      [AC_MSG_ERROR(Having SuperLU without ARPACK doesn't make much sense.)])
+
+AS_IF([test "x$have_petsc" = "xyes" -a "x$have_slepc" != "xyes"],
+      [AC_MSG_ERROR(Having PETSc without SLEPc doesn't make much sense.)])
+
+AS_IF([test "x$with_slepc" = "xyes" -a "x$have_arpack" = "xyes"],
+      [AC_MSG_ERROR(Can't compile SuperLU/ARPACK and SLEPc solvers into wgms3d simultaneously.)])
+
+AS_IF([test "x$have_slepc" != "xyes" -a "x$have_arpack" != "xyes"],
+      [AC_MSG_ERROR(No solver selected.)])
+
+##############################################################################
+# Build Makefile
+#
 
 AC_CONFIG_FILES([Makefile
+		 doc/Makefile
 		 matlab/Makefile
 		 tests/Makefile
 		 tests/all_field_components/Makefile

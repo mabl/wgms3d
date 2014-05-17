@@ -24,25 +24,25 @@ function wgms3d_plot_quiver (x0, y0, ex, ey, varargin)
     maxabsimag = max(max(sqrt(imag(ex).^2+imag(ey).^2)));
     if maxabsimag <= 1e-3 * maxabsreal
         % Plot only real part:
-        wgms3d_plot_quiver_sub(x0, y0, real(ex), real(ey), 1, varargin{:})
+        wgms3d_plot_quiver_sub(x0, y0, real(ex), real(ey), 1, [0 0 1], varargin{:})
     elseif maxabsreal <= 1e-3 * maxabsimag
         % Plot only imaginary part:
-        wgms3d_plot_quiver_sub(x0, y0, real(ex), real(ey), 1e-6, varargin{:})
-        wgms3d_plot_quiver_sub(x0, y0, imag(ex), imag(ey), 1, varargin{:})
+        wgms3d_plot_quiver_sub(x0, y0, real(ex), real(ey), 1e-6, [0 0 1], varargin{:})
+        wgms3d_plot_quiver_sub(x0, y0, imag(ex), imag(ey), 1, [0 0.7 0], varargin{:})
     else
         % Plot both, correctly scaled:
         if maxabsreal > maxabsimag
-            wgms3d_plot_quiver_sub(x0, y0, real(ex), real(ey), 1, varargin{:})
-            wgms3d_plot_quiver_sub(x0, y0, imag(ex), imag(ey), maxabsimag/maxabsreal, varargin{:})
+            wgms3d_plot_quiver_sub(x0, y0, real(ex), real(ey), 1, [0 0 1], varargin{:})
+            wgms3d_plot_quiver_sub(x0, y0, imag(ex), imag(ey), maxabsimag/maxabsreal, [0 0.7 0], varargin{:})
         else
-            wgms3d_plot_quiver_sub(x0, y0, real(ex), real(ey), maxabsreal/maxabsimag, varargin{:})
-            wgms3d_plot_quiver_sub(x0, y0, imag(ex), imag(ey), 1, varargin{:})
+            wgms3d_plot_quiver_sub(x0, y0, real(ex), real(ey), maxabsreal/maxabsimag, [0 0 1], varargin{:})
+            wgms3d_plot_quiver_sub(x0, y0, imag(ex), imag(ey), 1, [0 0.7 0], varargin{:})
         end
     end
 end
 
-function wgms3d_plot_quiver_sub (x, y, ux, uy, scale, varargin)
-  
+function wgms3d_plot_quiver_sub (x, y, ux, uy, scale, color, varargin)
+
     wgms3d_plot_parse_args
 
     if ~doquiver
@@ -82,5 +82,5 @@ function wgms3d_plot_quiver_sub (x, y, ux, uy, scale, varargin)
     end
   
     hold on
-    quiver(x, y, real(ux), real(uy), scale * quiver_scale, 'LineWidth', quiver_lw)
+    quiver(x, y, real(ux), real(uy), scale * quiver_scale, 'LineWidth', quiver_lw, 'Color', color)
 end

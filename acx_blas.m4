@@ -1,34 +1,38 @@
 dnl @synopsis ACX_BLAS([ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 dnl
 dnl This macro looks for a library that implements the BLAS
-dnl linear-algebra interface (see http://www.netlib.org/blas/).
-dnl On success, it sets the BLAS_LIBS output variable to
-dnl hold the requisite library linkages.
+dnl linear-algebra interface (see http://www.netlib.org/blas/). On
+dnl success, it sets the BLAS_LIBS output variable to hold the
+dnl requisite library linkages.
 dnl
 dnl To link with BLAS, you should link with:
-dnl 	$BLAS_LIBS $LIBS $FLIBS
-dnl in that order.  FLIBS is the output variable of the
-dnl AC_F77_LIBRARY_LDFLAGS macro (called if necessary by ACX_BLAS),
-dnl and is sometimes necessary in order to link with F77 libraries.
-dnl Users will also need to use AC_F77_DUMMY_MAIN (see the autoconf
-dnl manual), for the same reason.
 dnl
-dnl Many libraries are searched for, from ATLAS to CXML to ESSL.
-dnl The user may also use --with-blas=<lib> in order to use some
-dnl specific BLAS library <lib>.  In order to link successfully,
-dnl however, be aware that you will probably need to use the same
-dnl Fortran compiler (which can be set via the F77 env. var.) as
-dnl was used to compile the BLAS library.
+dnl 	$BLAS_LIBS $LIBS $FLIBS
+dnl
+dnl in that order. FLIBS is the output variable of the
+dnl AC_F77_LIBRARY_LDFLAGS macro (called if necessary by ACX_BLAS), and
+dnl is sometimes necessary in order to link with F77 libraries. Users
+dnl will also need to use AC_F77_DUMMY_MAIN (see the autoconf manual),
+dnl for the same reason.
+dnl
+dnl Many libraries are searched for, from ATLAS to CXML to ESSL. The
+dnl user may also use --with-blas=<lib> in order to use some specific
+dnl BLAS library <lib>. In order to link successfully, however, be
+dnl aware that you will probably need to use the same Fortran compiler
+dnl (which can be set via the F77 env. var.) as was used to compile the
+dnl BLAS library.
 dnl
 dnl ACTION-IF-FOUND is a list of shell commands to run if a BLAS
-dnl library is found, and ACTION-IF-NOT-FOUND is a list of commands
-dnl to run it if it is not found.  If ACTION-IF-FOUND is not specified,
-dnl the default action will define HAVE_BLAS.
+dnl library is found, and ACTION-IF-NOT-FOUND is a list of commands to
+dnl run it if it is not found. If ACTION-IF-FOUND is not specified, the
+dnl default action will define HAVE_BLAS.
 dnl
 dnl This macro requires autoconf 2.50 or later.
 dnl
-dnl @version $Id: acx_blas.m4,v 1.3 2001/12/12 19:54:10 stevenj Exp $
+dnl @category InstalledPackages
 dnl @author Steven G. Johnson <stevenj@alum.mit.edu>
+dnl @version 2001-12-13
+dnl @license GPLWithACException
 
 AC_DEFUN([ACX_BLAS], [
 AC_PREREQ(2.50)

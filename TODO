@@ -1,19 +1,9 @@
 
-* doc: explain how to exploit symmetry in certain structures
+The parallel version isn't as parallel as it could be; matrix setup
+and computation of secondary (derived) field components is done in the
+main process only. Improve this.
 
-* Add support for z-directed PMLs.
+Do systematic scaling tests of the parallel version.
 
-* doc: explain -5 option
+Add automatic unit tests to the build process.
 
-* verify correct functioning of PMLs and waveguide curvature in scalar
-  mode
-
-* mgp.c: some primitives may be intersected more than once by a given
-  line. this is not handled properly at the moment.
-
-* add single-precision calculations (can save memory)
-
-* Make pseudo-2d mode work again.
-
-* The rough polarization guessing could be extended to handle
-  correctly the case of inhomogeneous grids.

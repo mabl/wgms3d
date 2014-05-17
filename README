@@ -3,9 +3,9 @@
 
     wgms3d - a full-vectorial finite-difference mode solver.
 
-    VERSION 1.2.2
+    VERSION 2.0
 
-    Copyright (C) 2005-2013  Michael Krause <m.krause@tu-harburg.de>
+    Copyright (C) 2005-2014  Michael Krause <m.krause@tu-harburg.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,78 +22,6 @@
 
     ---------------------------------------------------------------------
 
-ABOUT:
-------
+    For documentation, see doc/index.html
 
-This code uses a finite-difference method to compute the modes of
-electromagnetic waveguides at a specified wavelength.
-
-Features:
-
-* The waveguide is assumed to have a piecewise constant
-  refractive-index profile (a "step-index" profile), i.e., the
-  waveguide cross section can consist of several adjacent regions of
-  constant refractive index. The interfaces between these regions do
-  not need to coincide with the discretization grid: they may be
-  straight (under any arbitrary angle) or curved (as in optical
-  fibers).
-
-* The entire waveguide may be curved along the propagation direction,
-  thus enabling the computation of bending or curvature losses. The
-  simulation is based on cylindrical coordinates adapted to the
-  waveguide curvature and does not rely on the widespread approximate
-  equivalent-straight-waveguide model.
-
-* The computation is fully vectorial. It does not make any a-priori
-  assumptions about the magnitude of the six electromagnetic field
-  components. (However, approximate scalar or semi-vectorial
-  calculation modes may optionally be enabled by the user.)
-
-* The four edges of the rectangular computational domain are enclosed
-  by perfectly electrically or magnetically conducting walls. These
-  walls may be padded with Perfectly Matched Layers in order to absorb
-  outgoing radiation and thus simulate leakage and curvature losses.
-
-The dielectrics are assumed to be isotropic and non-magnetic. Lossy
-materials are supported in the form of materials with complex
-refractive indices.
-
-The software is written in C++ and uses the ARPACK and SuperLU
-libraries to solve the discretized eigenproblem. It should compile
-under any Unix-type operating system. Scripts for post-processing and
-visualization of the results in Matlab are provided.
-
-This work was supported by Freie und Hansestadt Hamburg under grant
-"Hybride Mikrophotonik" and by the Deutsche Forschungsgemeinschaft
-(DFG) within Forschergruppe FOR 653.
-
-
-METHOD:
--------
-
-The discretization method used here is based on a method proposed in
-
-  Y.-C. Chiang, Y.-P. Chiou, and H.-C. Chang, "Improved Full-Vectorial
-  Finite-Difference Mode Solver for Optical Waveguides With Step-Index
-  Profiles," J. Lightwave Technol., vol. 20, no. 8, pp. 1609–1618,
-  Aug. 2002.
-
-wgms3d is based on a generalization of the concepts of Chiang et
-al. to curved waveguides and employs a simplified formulation. The
-details are described in
-
-  M. Krause, "Finite-Difference Mode Solver for Curved Waveguides with
-  Angled and Curved Dielectric Interfaces", J. Lightwave Technol.,
-  vol. 29, no. 5, pp. 691-699 (2011).
-
-Please cite the latter paper in your own articles if you found this
-software useful for your research.
-
-
-INSTALLATION / DOCUMENTATION:
------------------------------
-
-Some documentation, as well as the latest version of this software, is
-available online:
-
-  http://www.soundtracker.org/raw/wgms3d/
+    ---------------------------------------------------------------------

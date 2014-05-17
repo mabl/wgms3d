@@ -2,7 +2,7 @@
 /*
     wgms3d - a full-vectorial finite-difference mode solver.
 
-    Copyright (C) 2005-2013  Michael Krause <m.krause@tu-harburg.de>
+    Copyright (C) 2005-2014  Michael Krause <m.krause@tu-harburg.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -27,26 +27,27 @@
  */
 
 #include <complex>
-using std::complex;
 
-template <class T> T sq (T x) {
-    return x * x;
-}
+namespace wgms3d {
 
-template <class T> T re (T &x) {
-    return x;
-}
-    
-template <class T> T re (complex<T> &x) {
-    return x.real();
-}
-    
-template <class T> T im (T &x) {
-    return 0.0;
-}
+    /// Convert complex number to complex number (= do nothing),
+    /// required for complex calculation mode.
+    inline const std::complex<double> & maybeConvertComplexToReal (
+	const std::complex<double> &x,
+	std::complex<double> /* tag */)
+    {
+	return x;
+    }
 
-template <class T> T im (complex<T> &x) {
-    return x.imag();
-}
+    /// Convert complex number to real number (= discarding the
+    /// imaginary part), required for real calculation mode.
+    inline double maybeConvertComplexToReal (
+	const std::complex<double> &x,
+	double /* tag */)
+    {
+	return x.real();
+    }
+
+} // namespace wgms3d
     
 #endif // WGMS3D_COMPLEX_FUNCTIONS_H

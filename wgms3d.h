@@ -1,284 +1,316 @@
 
 /*
-    wgms3d - a full-vectorial finite-difference mode solver.
+  wgms3d - a full-vectorial finite-difference mode solver.
 
-    Copyright (C) 2005-2012  Michael Krause <m.krause@tu-harburg.de>
+  Copyright (C) 2005-2014  Michael Krause <m.krause@tu-harburg.de>
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+/** \file
+ *
+ * Definition of the public interface to wgms3d. The main class is
+ * wgms3d::ModeSolver. Documentation is not fully complete yet.
+ *
+ */
 
 #ifndef _WGMS3D_H
 #define _WGMS3D_H
 
 #include <vector>
+#include <memory>
+#include <mutex>
 
 #include "mgp.h"
 #include "pml.h"
 #include "sparse.h"
 #include "fortran_interface.h"
 #include "diffops.h"
+#include "solver.h"
 
-enum FD_MODE {
-    FD_MODE_FULL_VECTORIAL,
-    FD_MODE_SEMI_VECTORIAL_HZ, /* assume vertical (z-directed) magnetic field */
-    FD_MODE_SEMI_VECTORIAL_HR, /* assume horizontal (rho-directed) magnetic field */
-    FD_MODE_SCALAR
-};
+namespace wgms3d
+{
 
-extern int debugwgms3d, debugmgp;
+    extern int debugwgms3d, debugmgp;
 
-class wgms3d_mode;
-struct pml_spec;
+    /// The type of computed mode field components as returned by the
+    /// getXXX() functions in VectorMode and ScalarMode. Such a field
+    /// component is defined on all grid points, including boundary
+    /// points and known-to-be-zero points, i.e., the vector size is
+    /// exactly nr*nz, where nr and nz are the number of grid points
+    /// specified by the user on the command line in the rho and z
+    /// directions, respectively.
+    typedef std::vector<std::complex<double>> FieldComponent;
 
-struct wgms3d_simulation_parameters {
-    int fd_mode;
-    bool use_five_point_standard;
-    double k0; /* free-space wave number */
-    double c; /* Waveguide curvature c = 1/R */
-    PML pml[4]; /* pml_north, pml_east, pml_south, pml_west */
-
-    wgms3d_simulation_parameters (void) {
-	fd_mode = FD_MODE_FULL_VECTORIAL;
-	use_five_point_standard = false;
-	k0 = 2 * M_PI / 1.55e-6;
-	c = 0;
-    }
-};
-
-class wgms3d {
-    friend class wgms3d_mode;
-
-  private:
-
-    /* Basic simulation parameters: */
-    wgms3d_simulation_parameters sp;
-
-    /* This is just to temporally store what the user specifies using
-     * add_pml() until the system matrix is set up. These data are
-     * then converted to the final PML objects in 'sp'. */
-    std::vector<pml_spec> pml_specs;
-
-    /* Order: left, right, top, bottom.
-       0 = Electric wall
-       1 = Magnetic wall. */
-    int bconds[4];
-
-    /* 0 = grid point lies right on wall,
-       1 = two grid points lie symmetrically around wall
-       (for pseudo-2D mode) */
-    int bcondsym[4];
-
-    /* nir = 'n'umber of 'i'nner 'r'ho-grid points = all points that are
-     * not ghost points. */
-    int nir, niz;
-
-    /* number of values stored for a single field component: (=nir*niz) */
-    int fcsize;
-    
-    double nmax; /* maximum refractive index occurring in structure */
-
-    /* grid including ghost points: */
-    std::vector<double> _rhos, _zs;
-    /* _rhos and _zs with complex stretching: */
-    std::vector<std::complex<double>> stretched_rhos, stretched_zs;
-
-    /* waveguide geometry: */
-    MGP *mgp;
-
-    /* refractive-index distribution, computed from mgp: */
-    std::complex<double> *epsis;
-    int ldepsis;
-
-    /* for computing and storing finite-difference approximations for
-     * differential operators: */
-    class Diffops *diffops;
-
-    /* 'retain_list' is an array of size 2*nir*niz, one entry for each
-     * discretization point. If retain_list[i] < 0, then point i is
-     * known to be zero in advance (Dirichlet BC, or SV/scalar
-     * approximation).  Otherwise, retain_list[i] contains a
-     * non-negative integer. The non-negative entries of retain_list[]
-     * are consecutive integers starting at zero. 'number_of_unknowns'
-     * is the number of non-negative entries in retain_list. */
-    std::vector<int> retain_list;
-    int number_of_unknowns;
-
-    bool complex_calculation;
-    void *arpack_evec;
-    std::complex<double> *arpack_eval;
-
-    /* 'Ht' stores the transverse H field of the mode specified by
-       'active_mode'.  If active_mode < 0, Ht is invalid. */
-    std::complex<double> *Ht;
-    int active_mode;
-    void activate_mode (wgms3d_mode *which);
-
-    std::complex<double> *derived_field_tmp;
-    const std::complex<double> * get_er(wgms3d_mode *which);
-    const std::complex<double> * get_ez(wgms3d_mode *which);
-    const std::complex<double> * get_ep(wgms3d_mode *which);
-    const std::complex<double> * get_hp(wgms3d_mode *which);
-    sparse_matrix<std::complex<double> > *matrix_Ht_to_Erho;
-    sparse_matrix<std::complex<double> > *matrix_Ht_to_Ez;
-    sparse_matrix<std::complex<double> > *matrix_Ht_to_Ephi;
-    sparse_matrix<std::complex<double> > *matrix_Ht_to_Hphi;
-    std::complex<double> *vector_Hz_to_Erho;
-    std::complex<double> *vector_Hrho_to_Ez;
-
-    /* -------- functions ---------- */
-
-    sparse_matrix<std::complex<double> > * initmatrix (void);
-
-    void add_matrix_entries (sparse_matrix<std::complex<double> > *A,
-			     int to,
-			     int Poffset,
-			     const std::complex<double> *m);
-
-    /* In a finite-difference expression, replace references to ghost
-     * points with references to inner or boundary grid points, applying
-     * the proper symmetry conditions. */
-    void handle_ghost_points (std::complex<double> *m,
-			      int xi,
-			      int yi);
-
-    void get_retain_list_sub (int ri,
-			      int rinc,
-			      int zi,
-			      int zinc,
-			      int n,
-			      int x_or_y);
-
-    void prepare_retain_list (void);
-    
-    sparse_matrix<std::complex<double> > *
-	matrix_remove_zero_points (sparse_matrix<std::complex<double> > *in);
-
-  public:
-
-    wgms3d (void);
-
-    ~wgms3d (void);
-
-    void set_fd_mode (int mode) {
-	sp.fd_mode = mode;
-    }
-
-    int get_fd_mode (void) {
-	return sp.fd_mode;
-    }
-
-    void set_geometry (const char *mgp_filename);
-
-    bool is_core_layer_defined (void) {
-	assert(mgp != NULL);
-	return mgp->is_core_layer_defined();
-    }
-
-    void set_grid (std::vector<double> *rho_grid,
-		   std::vector<double> *z_grid);
-
-    void set_wavelength (double lambda) {
-	sp.k0 = 2.0 * M_PI / lambda;
-    }
-
-    void add_pml (char where,
-		  int numcells,
-		  double sigmamult);
-
-    void set_curvature (double curvature) {
-	sp.c = curvature;
-    }
-
-    void set_walltype (int which_wall,
-		       int type) {
-	assert(which_wall >= 0 && which_wall <= 3);
-	assert(type == 0 || type == 1);
-
-	bconds[which_wall] = type;
-    }
-
-    void set_five_point_standard (bool to) {
-	sp.use_five_point_standard = to;
-    }
-
-    /* if specified effective index < 0, then use maximum index
-     * occurring in structure. */
-    bool calculate_modes (int number_of_modes,
-			  double near_this_effective_index);
-
-    std::vector<wgms3d_mode> modes;
-
-    const std::complex<double> * get_stretched_rhos();
-    const std::complex<double> * get_stretched_zs();
-    void get_epsis(const std::complex<double> **epsis, int *ldepsis);
-
-    /* init_derivation() prepares the conversion matrices required for
-     * the calculation of the derived fields (Er, Ez, Ep, Hp) from the
-     * transverse H field. The argument 'which' is a bitmask that
-     * specifies which of the matrices should be prepared. */
-    void init_derivation (int which);
-};
-
-class wgms3d_mode {
-    friend class wgms3d;
-
-  private:
-    wgms3d *wg;
-    int number;
-    int modetype;
-
-  public:
-    std::complex<double> beta;
-
-    std::complex<double> get_neff (void) {
-	return beta / wg->sp.k0;
-    }
-
-    /* Power loss in dB/unit length */
-    double get_alpha_per_uol (void) {
-	return im(beta) * 20.0 / M_LN10;
-    }
-
-    /* Power loss in dB/90° */
-    double get_alpha_per_90deg (void) {
-	if(wg->sp.c == 0.0) {
-	    return 0.0;
-	} else {
-	    return get_alpha_per_uol() * M_PI / 2.0 * (1.0 / wg->sp.c);
+    class Mode
+    {
+    public:
+	/// Get propagation constant of this mode (in 1/UOL).
+	std::complex<double> getBeta () const
+	{
+	    return beta;
 	}
-    }
 
-    char estimate_polarization (void);
+	/// Get effective index of this mode.
+	std::complex<double> getEffectiveIndex () const;
 
-    /* Add phase factor to the entire mode field such that its phase
-     * averaged (in some sense) over the core region (defined by the 'C'
-     * directive in the geometry file) is zero. This does not have any
-     * physical meaning and is only for convenience when visualizing the
-     * mode fields. */
-    void adjust_phase (void);
+	/// Collective call, but only root process gets correct
+	/// result.
+	virtual char estimatePolarization () const = 0;
+    
+	/// Power loss in dB per unit length
+	double getAlphaPerUol () const
+	{
+	    return beta.imag() * 20.0 / M_LN10;
+	}
 
-    /* The following functions return pointers to the requested field
-     * data. The data is only valid until the next call of one these
-     * functions. If more persistence is needed, a copy should be made
-     * by the caller. Do not delete[] or free this result. */
+	/// Power loss in dB per 90-degree curve (not including transition
+	/// losses at the straight<->curved waveguide junctions)
+	double getAlphaPer90Deg () const;
 
-    const std::complex<double> * get_hr(void);
-    const std::complex<double> * get_hz(void);
-    const std::complex<double> * get_hp(void);
-    const std::complex<double> * get_er(void);
-    const std::complex<double> * get_ez(void);
-    const std::complex<double> * get_ep(void);
-};
+	/// Constructor. Used only by class ModeSolver.
+	Mode (unsigned number,
+	      std::complex<double> beta,
+	      std::shared_ptr<struct SimulationParameters> simulation_parameters);
 
-#endif
+	virtual ~Mode () {}
+    
+    protected:
+	const unsigned number;
+	const std::complex<double> beta;
+	const std::shared_ptr<struct SimulationParameters> sp;
+	int rank; //< MPI rank, will be initialized by constructor
+
+    };
+
+    class VectorMode : public Mode
+    {
+    public:
+	/// Return reference to the rho component of the magnetic
+	/// field. Collective call, but only root process gets
+	/// non-empty result vector.
+	const FieldComponent & getHr () const;
+
+	/// Return reference to the z component of the magnetic
+	/// field. Collective call, but only root process gets
+	/// non-empty result vector.
+	const FieldComponent & getHz () const;
+
+	/// Return the rho component of the electric field. Collective
+	/// call, but only root process gets non-empty result vector.
+	FieldComponent getEr () const;
+
+	/// Return the z component of the electric field. Collective
+	/// call, but only root process gets non-empty result vector.
+	FieldComponent getEz () const;
+
+	/// Return the phi component of the electric field. Collective
+	/// call, but only root process gets non-empty result vector.
+	FieldComponent getEp () const;
+
+	/// Return the phi component of the magnetic field. Collective
+	/// call, but only root process gets non-empty result vector.
+	FieldComponent getHp () const;
+
+	char estimatePolarization () const /* final */;
+
+	/// Constructor. Used only by class ModeSolver.
+	VectorMode (
+	    unsigned number,
+	    std::complex<double> beta,
+	    std::shared_ptr<struct SimulationParameters> simulation_parameters,
+	    std::shared_ptr<ISolverResult> solver_result,
+	    std::shared_ptr<class DerivedFieldMatrices> deriv_field_mats
+	    )
+	    : Mode(number, beta, simulation_parameters),
+	      solver_result(solver_result), dfm(deriv_field_mats),
+	      Ht_valid(false)
+	{}
+
+    private:
+	std::shared_ptr<ISolverResult> solver_result;
+
+	/// (Pointer will only be initialized for MPI root.)
+	std::shared_ptr<class DerivedFieldMatrices> dfm;
+
+	/// These will be initialized on first access.
+	mutable FieldComponent Hr, Hz;
+	mutable bool Ht_valid;
+	mutable std::mutex mutables;
+
+	/// Make sure Hr and Hz contain the primary field
+	/// components. Collective call, but only MPI root process
+	/// actually fills fields.
+	void ensurePrimaryFields () const;
+
+	/// If we're the MPI root, compute a derived field using the
+	/// specified function, otherwise return empty
+	/// vector. Collective call.
+	FieldComponent computeDerivedField (
+	    unsigned which,
+	    std::function<void(std::complex<double>*)> f
+	    ) const;
+
+    };
+
+    class ScalarMode : public Mode
+    {
+    public:
+	/// Return the computed scalar field. Collective call, but
+	/// only root process gets non-empty result vector.
+	FieldComponent getField () const;
+
+	char estimatePolarization () const /* final */
+	{
+	    return '?';
+	}
+
+	/// Constructor. Used only by class ModeSolver.
+	ScalarMode (
+	    unsigned number,
+	    std::complex<double> beta,
+	    std::shared_ptr<struct SimulationParameters> simulation_parameters,
+	    std::shared_ptr<ISolverResult> solver_result
+	    )
+	    : Mode(number, beta, simulation_parameters),
+	      solver_result(solver_result)
+	{}
+
+    private:
+	std::shared_ptr<ISolverResult> solver_result;
+
+    };
+
+    enum class FDMode
+    {
+	FullVectorial,
+	SemiVectorialHz, /* assume vertical (z-directed) magnetic field */
+	SemiVectorialHr, /* assume horizontal (rho-directed) magnetic field */
+	Scalar
+    };
+
+    class ModeSolver
+    {
+    public:
+	ModeSolver (void);
+	~ModeSolver (void);
+
+	void set_fd_mode (FDMode);
+
+	FDMode get_fd_mode (void) const;
+
+	void set_geometry (const char *mgp_filename);
+
+	bool is_core_layer_defined (void) const;
+
+	void set_wavelength (double lambda);
+
+	void set_curvature (double curvature);
+
+	/// Set the rectangular computation grid. All modes will be
+	/// "sampled" on the grid specified here. The first and last
+	/// points specify the location of the walls of the
+	/// computational domain.
+	///
+	/// Depending on the wall type (electric or magnetic) and
+	/// field component (normal or tangential), the wall forces
+	/// some field components to be zero there; this knowledge
+	/// will be used internally to optimize the solution process,
+	/// but the returned mode fields will simply contain a zero at
+	/// those points, so the user doesn't have to care about these
+	/// details. Also, ghost points required for the
+	/// finite-difference discretization will be added to the grid
+	/// internally.
+	void setGrid (const std::vector<double> &rho_grid,
+		      const std::vector<double> &z_grid);
+
+	/// Add PML to one of the four borders of the simulation
+	/// window. The simulation grid must have been initialized
+	/// prior to this call.
+	void add_pml (char where,
+		      int numcells,
+		      double sigmamult);
+
+	void set_walltype (int which_wall, int type);
+
+	void set_five_point_standard (bool to);
+
+	const std::complex<double> * get_stretched_rhos();
+	const std::complex<double> * get_stretched_zs();
+
+	/// Get the relative-permittivity array (defined on user-specified
+	/// grid plus surrounding FD ghost points). Valid only for as long
+	/// as this object lives.
+	void get_epsis (const std::complex<double> **epsis, int *ldepsis);
+
+	/// Calculate modes. Geometry and simulation parameters must
+	/// have been specified before. If specified effective index <
+	/// 0, then use maximum index occurring in
+	/// structure. Collective call, but actual result vectors will
+	/// only be available to the MPI root process.
+	void calculateModes (unsigned number_of_modes,
+			     double near_this_effective_index,
+			     unsigned derived_field_mask);
+
+	/// Return the i-th mode. (note: returning pointer instead of
+	/// object directly here since Mode is an abstract base class)
+	std::unique_ptr<Mode> getMode (unsigned i);
+
+    private:
+	/// Basic simulation parameters. Keeping them in a shared_ptr
+	/// since they will be passed to the Mode objects returned by
+	/// getMode().
+	std::shared_ptr< struct SimulationParameters > sp;
+
+	/// Temporarily stores what the user specified using add_pml()
+	/// until the system matrix is set up. These data are then
+	/// converted to the final PML objects in 'sp' (need the grid
+	/// data for this).
+	std::vector< struct pml_spec > pml_specs;
+
+	/// Refractive-index distribution, computed from mgp:
+	std::unique_ptr< std::complex<double>[] > epsis;
+
+	/// shared_ptr, because this is passed on to class Mode
+	std::shared_ptr< ISolverResult > solver_result;
+
+	/// shared_ptr, because this is passed on to class Mode.
+	std::shared_ptr< class DerivedFieldMatrices > deriv_field_mats;
+
+	std::unique_ptr<sparse_matrix<std::complex<double>>> initmatrix (
+	    class Diffops & diffops,
+	    double &nmax
+	    );
+
+	void add_matrix_entries (sparse_matrix<std::complex<double> > &A,
+				 int to,
+				 int Poffset,
+				 const std::complex<double> *m);
+
+	/// In a finite-difference expression, replace references to
+	/// ghost points with references to inner or boundary grid
+	/// points, applying the proper symmetry conditions.
+	void handle_ghost_points (std::complex<double> *m, int xi, int yi);
+
+	/// Prepares the conversion matrices required for the
+	/// calculation of the derived fields (Er, Ez, Ep, Hp) from
+	/// the transverse H field. The argument 'which' is a bitmask
+	/// that specifies which of the matrices should be prepared.
+	void initDerivedFieldMatrices (Diffops & diffops, unsigned which);
+
+    };
+
+} // namespace wgms3d
+
+#endif // _WGMS3D_H

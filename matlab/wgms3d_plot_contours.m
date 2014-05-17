@@ -29,9 +29,8 @@ function wgms3d_plot_contours (x, y, u, varargin)
     end
   
     if ~threedee
-        if mmax == 0
-            mmax = max(max(u));
-        end
+        %mmin = min(min(u));
+        mmax = max(max(u));
         if logcontours
             % 1dB-Contours (1dB = Faktor .7943)
             % 2dB-Contours (2dB = Faktor .631)
@@ -51,18 +50,21 @@ function wgms3d_plot_contours (x, y, u, varargin)
             % for Matlab 7 and later:
             [C,h] = contourf(x, y, u, clevels);
             h = get(h,'Children');
-        end        
+        end
         %    colormap 'hot';
         colormap 'gray';
         X = (length(colormap)-1)/(length(clevels)-1);
         for i = 1 : length(h)
             ud = get(h(i),'UserData');
-            a = find(clevels == ud);
-            ci = floor(1 + (a-1)*X);
-            set(h(i), 'CData', ci)
-            set(h(i), 'FaceVertexCData', ci)
-            set(h(i), 'CDataMapping', 'direct')
-            set(h(i), 'EdgeColor', edgecolor)
+	    if ~isempty(ud)
+		% this will only work in Matlab:
+		a = find(clevels == ud);
+		ci = floor(1 + (a-1)*X);
+		set(h(i), 'CData', ci)
+		set(h(i), 'FaceVertexCData', ci)
+		set(h(i), 'CDataMapping', 'direct')
+		set(h(i), 'EdgeColor', edgecolor)
+	    end
         end
         
     else

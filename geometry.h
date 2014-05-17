@@ -166,4 +166,4 @@ public:
     }
 };
 
-#endif
+#endif // __GEOMETRY_H

@@ -2,7 +2,7 @@
 /*
     wgms3d - a full-vectorial finite-difference mode solver.
 
-    Copyright (C) 2005-2012  Michael Krause <m.krause@tu-harburg.de>
+    Copyright (C) 2005-2014  Michael Krause <m.krause@tu-harburg.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,10 +24,13 @@
 #define _MK_SPARSE_H
 
 #include <iostream>
+#include <cstdio>
+#include <cassert>
+#include <cstdlib>
+#include <stdexcept>
 
-#include <stdio.h>
-#include <assert.h>
-#include <stdlib.h>
+#include <boost/throw_exception.hpp>
+#include <boost/noncopyable.hpp>
 
 #include "complex_functions.h"
 
@@ -36,29 +39,27 @@ struct sparse_entry {
     unsigned int i; /* matrix row */
     unsigned int j; /* matrix column */
     T v;            /* value */
-
-    bool
-    is_same_place (sparse_entry<T> &other) {
-	return (i == other.i && j == other.j);
-    }
 };
 
+/// TODO: get rid of this entire class. it's broken. can't assign
+/// without leaks, for example. it does its current job, but don't use
+/// it for anything else.
 template <typename T>
-struct sparse_matrix {
-    unsigned int m, n; /* m x n matrix */
+struct sparse_matrix : public boost::noncopyable {
+    // TODO: m != n never used in wgms3d
+    unsigned int m, n;
     unsigned int length, alloc_length;
+
+    // TODO: use std::vector here:
     sparse_entry<T> *entries;
     unsigned int *indextable;
 
+    /// For diagnostics.
     int size () {
 	return alloc_length * sizeof(entries[0]) + ((m>n?m:n)+1)*sizeof(indextable[0]);
     }
 
-    sparse_matrix () {
-	m = 0;
-    } // default constructor required
-
-    sparse_matrix (unsigned int dim1, unsigned int dim2 = 0) {
+    sparse_matrix (unsigned int dim1 = 0, unsigned int dim2 = 0) {
 	init(dim1, dim2 > 0 ? dim2 : dim1);
     }
 
@@ -80,7 +81,7 @@ struct sparse_matrix {
 			     unsigned int j,
 			     T v) {
 	if(i > m || j > n) {
-	    std::cerr << "sparse.h::add_entry_alsozero(): indices out of range." << std::endl;
+	    BOOST_THROW_EXCEPTION(std::invalid_argument("indices out of range."));
 	    exit(1);
 	}
 
@@ -125,6 +126,8 @@ struct sparse_matrix {
     /* 1 = first by row index, 2 = first by column index */
     void order (int how) {
 	unsigned int numcihere, cip;
+
+	// TODO: simplify using std::sort
 
 	/* FIXME: the two cases can be merged in one code ?? */
 
@@ -202,12 +205,17 @@ struct sparse_matrix {
 	if(in == NULL)
 	    return;
 
-	// FIXME: only need to do the following if matrix has changed since last ordering!
+	// TODO FIXME: only need to do the following if matrix has
+	// changed since last ordering!
 	order(1);
 
 	for(k = 0; k < m; k++) {
 	    for(yi = indextable[k]; yi < indextable[k+1]; yi++) {
 		l = entries[yi].j;
+//		if(k < 0 || k >= 2500 || l < 0 || l >= 2500) {
+//		    std::cout << l << " " << k << std::endl;
+//		    std::terminate();
+//		}
 		out[k] += entries[yi].v * in[l];
 	    }
 	}
@@ -216,7 +224,7 @@ struct sparse_matrix {
     /* Write Matrix * in to out */
     void vecmult (T *out, T *in) {
 	unsigned int k;
-	
+
 	for(k = 0; k < m; k++) {
 	    out[k] = 0.0;
 	}

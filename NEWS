@@ -4,6 +4,22 @@ ChangeLog)
 
 ----------------------------------------------------------------------
 
+What is new in wgms3d-2.0 (17-May-2014):
+
+* Introduced a new parallel / distributed eigensolver backend based on
+  MPI / PETSc / SLEPc for large-scale simulations. This work was
+  inspired by initial experiments done by Henry Wu ('pwgms3d').
+
+* Can choose during configuration stage whether to use the new
+  MPI-based parallel eigensolver backend or the old one based on
+  SuperLU / ARPACK.
+
+* Fixed some of the Matlab scripts for compatibility with GNU Octave.
+
+* Improved modularity of C++ code.
+
+----------------------------------------------------------------------
+
 What is new in wgms3d-1.2.2 (22-Sep-2013):
 
 * Fixed source code so that it better complies with the C++11
