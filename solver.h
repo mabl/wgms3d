@@ -22,6 +22,7 @@
 
 #include <complex>
 #include <memory>
+#include <vector>
 
 #include "sparse.h"
 

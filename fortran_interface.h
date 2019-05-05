@@ -38,13 +38,13 @@ extern "C"
 				       int *incx, double *y, int *incy);
     extern void F77_FUNC(zaxpy,ZAXPY) (int *n, std::complex<double> *alpha, std::complex<double> *x,
 				       int *incx, std::complex<double> *y, int *incy);
-    extern void F77_FUNC(dgemm,DGEMM) (char *TRANSA, char *TRANSB, int *M, int *N, int *K,
-				       double *ALPHA, double *A, int *LDA, double *B, int *LDB,
-				       double *BETA, double *C, int *LDC);
-    extern void F77_FUNC(zgemm,ZGEMM) (char *TRANSA, char *TRANSB, int *M, int *N, int *K,
-				       std::complex<double> *ALPHA, std::complex<double> *A, int *LDA,
-				       std::complex<double> *B, int *LDB,
-				       std::complex<double> *BETA, std::complex<double> *C, int *LDC);
+    extern int F77_FUNC(dgemm,DGEMM) (const char*, const char*, const int*, const int*, const int*,
+                                      const double*, const double*, const int*, const double*,
+                                      const int*, const double*, double*, const int*);
+    extern int F77_FUNC(zgemm,ZGEMM) (char *TRANSA, char *TRANSB, int *M, int *N, int *K,
+                       std::complex<double> *ALPHA, std::complex<double> *A, int *LDA,
+                       std::complex<double> *B, int *LDB,
+                       std::complex<double> *BETA, std::complex<double> *C, int *LDC);
 }
 
 inline void COPY (int n, double *x, int incx, double *y, int incy) {

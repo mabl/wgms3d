@@ -23,8 +23,9 @@
 #include <algorithm>
 #include <complex>
 
-#include <slu_ddefs.h>
-#include <slu_util.h>
+#include <superlu/slu_ddefs.h>
+#include <superlu/slu_util.h>
+//#include <superlu/slu_zdefs.h>
 
 #include "fortran_interface.h"
 #include "solver.h"
@@ -39,27 +40,27 @@ extern "C" {
     /* ARPACK functions */
     extern void
     F77_FUNC(znaupd,ZNAUPD) (int *ido, char *bmat, int *n, char *which, int *nev,
-			     double *tol, std::complex<double> *resid, int *ncv, std::complex<double> *v,
-			     int *ldv, int *iparam, int *ipntr, std::complex<double> *workd,
-			     std::complex<double> *workl, int *lworkl, double *rwork, int *info);
+                 double *tol, std::complex<double> *resid, int *ncv, std::complex<double> *v,
+                 int *ldv, int *iparam, int *ipntr, std::complex<double> *workd,
+                 std::complex<double> *workl, int *lworkl, double *rwork, int *info);
     extern void
     F77_FUNC(dnaupd,DNAUPD) (int *ido, char *bmat, int *n, char *which, int *nev,
-			     double *tol, double *resid, int *ncv, double *v,
-			     int *ldv, int *iparam, int *ipntr, double *workd,
-			     double *workl, int *lworkl, int *info);
+                 double *tol, double *resid, int *ncv, double *v,
+                 int *ldv, int *iparam, int *ipntr, double *workd,
+                 double *workl, int *lworkl, int *info);
     extern void
     F77_FUNC(zneupd,ZNEUPD) (logical *rvec, char *howmny, logical *select, std::complex<double> *d,
-			     std::complex<double> *z, int *ldz, std::complex<double> *sigma, std::complex<double> *workev,
-			     char *bmat, int *n, char *which, int *nev, double *tol,
-			     std::complex<double> *resid, int *ncv, std::complex<double> *v, int *ldv,
-			     int *iparam, int *ipntr, std::complex<double> *workd, std::complex<double> *workl,
-			     int *lworkl, double *rwork, int *info);
+                 std::complex<double> *z, int *ldz, std::complex<double> *sigma, std::complex<double> *workev,
+                 char *bmat, int *n, char *which, int *nev, double *tol,
+                 std::complex<double> *resid, int *ncv, std::complex<double> *v, int *ldv,
+                 int *iparam, int *ipntr, std::complex<double> *workd, std::complex<double> *workl,
+                 int *lworkl, double *rwork, int *info);
     extern void
     F77_FUNC(dneupd,DNEUPD) (logical *rvec, char *howmny, logical *select, double *dr, double *di,
-			     double *z, int *ldz, double *sigmar, double *sigmai, double *workev,
-			     char *bmat, int *n, char *which, int *nev, double *tol, double *resid,
-			     int *ncv, double *v, int *ldv, int *iparam, int *ipntr, double *workd,
-			     double *workl, int *lworkl, int *info);
+                 double *z, int *ldz, double *sigmar, double *sigmai, double *workev,
+                 char *bmat, int *n, char *which, int *nev, double *tol, double *resid,
+                 int *ncv, double *v, int *ldv, int *iparam, int *ipntr, double *workd,
+                 double *workl, int *lworkl, int *info);
 
     /* SuperLU functions */
     /* We want to use both the real and complex SuperLU routines, but we
@@ -71,18 +72,17 @@ extern "C" {
        This is for SuperLU Version 4.0. */
 
     extern void    zgstrs (trans_t, SuperMatrix *, SuperMatrix *, int *, int *,
-			   SuperMatrix *, SuperLUStat_t*, int *);
+                            SuperMatrix *, SuperLUStat_t*, int *);
     
     extern void    zgstrf (superlu_options_t*, SuperMatrix*,
-			   int, int, int*, void *, int, int *, int *, 
-			   SuperMatrix *, SuperMatrix *, SuperLUStat_t*, int *);
+                           int, int, int*, void *, int, int *, int *,
+                           SuperMatrix *, SuperMatrix *, GlobalLU_t *,
+                   SuperLUStat_t*, int *);
 
-    extern void
-    zCreate_CompCol_Matrix(SuperMatrix *, int, int, int, std::complex<double> *,
-			   int *, int *, Stype_t, Dtype_t, Mtype_t);
+    extern void    zCreate_CompCol_Matrix(SuperMatrix *, int, int, int, std::complex<double> *,
+                                          int *, int *, Stype_t, Dtype_t, Mtype_t);
 
-    extern int     
-    zQuerySpace (SuperMatrix *, SuperMatrix *, mem_usage_t *);
+    extern int     zQuerySpace (SuperMatrix *, SuperMatrix *, mem_usage_t *);
 }
 
 namespace
@@ -98,16 +98,29 @@ namespace
 	}
     }
 
-    void GSTRF (superlu_options_t *a, SuperMatrix *AC,
-		int d, int e, int *f, void *g, int h, int *i, int *j, 
-		SuperMatrix *k, SuperMatrix *l, SuperLUStat_t *m, int *n)
+    void GSTRF (superlu_options_t *  	options,
+                SuperMatrix *  	A,
+                int  	relax,
+                int  	panel_size,
+                int *  	etree,
+                void *  	work,
+                int  	lwork,
+                int *  	perm_c,
+                int *  	perm_r,
+                SuperMatrix *  	L,
+                SuperMatrix *  	U,
+                GlobalLU_t *  	Glu,
+                SuperLUStat_t *  	stat,
+                int *  	info)
     {
-	if(AC->Dtype == SLU_D) {
-	    dgstrf(a,AC,d,e,f,g,h,i,j,k,l,m,n);
-	} else if(AC->Dtype == SLU_Z) {
-	    zgstrf(a,AC,d,e,f,g,h,i,j,k,l,m,n);
-	}
+    if(A->Dtype == SLU_D) {
+        dgstrf(options, A, relax, panel_size, etree, work, lwork, perm_c, perm_r, L, U, Glu, stat, info);
+    } else if(A->Dtype == SLU_Z) {
+        zgstrf(options, A, relax, panel_size, etree, work, lwork, perm_c, perm_r, L, U, Glu, stat, info);
     }
+    }
+
+
 
     int QuerySpace (SuperMatrix *L, SuperMatrix *U, mem_usage_t *m)
     {
@@ -240,6 +253,7 @@ namespace
     {
 	SuperLUStat_t stat;
 	superlu_options_t options;
+    GlobalLU_t Glu;
 	SuperMatrix A_slu;
 	int permc_spec;
 	int nnz = A.length;
@@ -292,8 +306,9 @@ namespace
 
 	result.perm_r = new int[A.n];
 
+    // FIXME: Possibly set Glu to a sane value?
 	GSTRF(&options, &AC, relax, panel_size,
-	      etree, NULL, lwork, result.perm_c, result.perm_r, &result.L, &result.U, &stat, &info);
+          etree, NULL, lwork, result.perm_c, result.perm_r, &result.L, &result.U, &Glu, &stat, &info);
 	if(info) {
 	    std::cerr << "SuperLU Xgstrf failed with INFO = " << info << std::endl;
 	    exit(1);
@@ -600,5 +615,5 @@ std::unique_ptr<ISolverResult> eigenSolver (
     int num_eigenvalues
     )
 {
-    return make_unique<ArpackSolverResult>(std::move(matrix), is_matrix_real, sigma, num_eigenvalues);
+    return std::make_unique<ArpackSolverResult>(std::move(matrix), is_matrix_real, sigma, num_eigenvalues);
 }

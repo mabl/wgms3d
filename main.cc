@@ -148,7 +148,7 @@ namespace
 	static_assert(sizeof(int) == 4, "Code assumes that sizeof(int) == 4.");
 	static_assert(sizeof(std::complex<double>) == 16, "Code assumes that sizeof(std::complex<double>) == 16.");
 
-	auto wg = make_unique<wgms3d::ModeSolver>();
+    auto wg = std::make_unique<wgms3d::ModeSolver>();
 
 #ifdef HAVE_SLEPC
 	// don't want collisions with our own arguments, so we disable
